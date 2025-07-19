@@ -5,7 +5,7 @@ WORKDIR /app
 RUN apk add --no-cache git
 RUN git clone https://github.com/tailscale/tailscale.git .
 
-RUN cd tailscale && go build -o /derper ./cmd/derper
+RUN go build -o /derper ./cmd/derper
 
 FROM alpine:latest
 
