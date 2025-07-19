@@ -4,8 +4,11 @@ services:
     container_name: derp
     env_file:
       - .env
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
     ports:
-      - "3478:3478" # STUN 端口
+      - 3478:3478/udp
     volumes:
       - /lib/modules:/lib/modules:ro
       - ./derp/config:/var/lib/tailscale
