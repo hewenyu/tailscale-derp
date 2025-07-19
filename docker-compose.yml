@@ -9,6 +9,8 @@ services:
     volumes:
       - /lib/modules:/lib/modules:ro
       - ./derp/config:/var/lib/tailscale
+    devices:
+      - /dev/net/tun:/dev/net/tun
 
   openresty:
     image: openresty/openresty:1.21.4.1-focal
