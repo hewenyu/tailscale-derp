@@ -6,6 +6,8 @@ services:
       - .env
     ports:
       - "3478:3478" # STUN 端口
+    volumes:
+      - ./derp/config:/var/lib/tailscale
 
   openresty:
     image: openresty/openresty:1.21.4.1-focal
