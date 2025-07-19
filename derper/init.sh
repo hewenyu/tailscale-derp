@@ -5,4 +5,4 @@ set -e
 # Start the DERP server with the specified parameters
 /usr/bin/tailscale up --accept-routes=true --accept-dns=true --auth-key "${TAILSCALE_AUTH_KEY}" &> /var/lib/tailscale/tailscale_onboard.log &
 # #Start Tailscale derp server
-/derper --hostname=$TAILSCALE_DERP_HOSTNAME --a=$TAILSCALE_DERP_ADDR --stun-port=$TAILSCALE_DERP_STUN_PORT --verify-clients=$TAILSCALE_DERP_VERIFY_CLIENTS
+/derper --hostname=$TAILSCALE_DERP_HOSTNAME --a=$TAILSCALE_DERP_ADDR --stun-port=$TAILSCALE_DERP_STUN_PORT --verify-clients=$TAILSCALE_DERP_VERIFY_CLIENTS --stun
