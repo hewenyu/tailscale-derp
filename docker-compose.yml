@@ -17,7 +17,7 @@ services:
 
   openresty:
     image: openresty/openresty:1.21.4.1-focal
-    container_name: netdns-domestic-openresty
+    container_name: openresty
     restart: always
     ports:
       - "80:80"
