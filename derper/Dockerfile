@@ -1,18 +1,18 @@
 # syntax=docker/dockerfile:1
 
-FROM golang:1.23.3-alpine AS builder
-
+FROM golang:1.24-alpine AS builder
 WORKDIR /app
-
 RUN apk add --no-cache git
+RUN git clone https://github.com/tailscale/tailscale.git .
 
-RUN go install tailscale.com/cmd/derper@latest
+RUN cd tailscale && go build -o /derper ./cmd/derper
 
 FROM alpine:latest
 
 RUN apk add --no-cache tailscale
 
-COPY --from=builder /go/bin/derper /usr/local/bin/derper
+WORKDIR /app
+COPY --from=builder /derper /derper
 
 COPY init.sh /init.sh
 
@@ -25,4 +25,4 @@ ENV TAILSCALE_DERP_STUN_PORT="3478"
 ENV TAILSCALE_DERP_VERIFY_CLIENTS="true"
 EXPOSE 443
 
-ENTRYPOINT ["/init.sh"] 
+ENTRYPOINT ["/init.sh"]
