@@ -32,6 +32,11 @@ go.work.sum
 # .vscode/
 
 
-./openresty
-./acme.sh
-./certbot
+# Certificate files (managed by 1panel)
+certs/*.pem
+certs/*.key
+certs/*.crt
+
+# Legacy directories (no longer used) 
+acme.sh/
+certbot/
