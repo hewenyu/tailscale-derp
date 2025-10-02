@@ -60,6 +60,31 @@ docker-compose up -d
 - 确保域名正确解析至 VPS 公网 IP
 - `.env` 文件需正确配置 Tailscale 相关参数
 
+## 运行模式
+
+默认采用“内置 tailscaled”模式：容器内启动 tailscaled 并执行 `tailscale up`，需要 `TAILSCALE_AUTH_KEY`、`cap_add` 和 `/dev/net/tun`。
+
+如果你的宿主机已运行 tailscaled，也可以复用宿主机 tailscaled：
+
+1) 在 `.env` 设置：
+```
+TAILSCALE_EMBEDDED_TAILSCALED=false
+```
+
+2) 在 `docker-compose.yml` 挂载宿主机 socket：
+```yaml
+services:
+  derp:
+    volumes:
+      - /var/run/tailscale/tailscaled.sock:/var/run/tailscale/tailscaled.sock:ro
+```
+
+3) 可移除以下内容（宿主机模式不需要）：
+- `cap_add: [NET_ADMIN, NET_RAW]`
+- `devices: - /dev/net/tun:/dev/net/tun`
+- `/lib/modules` 挂载
+- `.env` 中的 `TAILSCALE_AUTH_KEY`
+
 ## 与原版区别
 此版本移除了：
 - OpenResty反向代理配置

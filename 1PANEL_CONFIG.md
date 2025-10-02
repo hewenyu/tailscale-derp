@@ -46,6 +46,28 @@ services:
 TAILSCALE_DERP_HOSTNAME=your-domain.com
 ```
 
+### 6. 复用宿主机 tailscaled（可选）
+如果宿主机已安装并运行 Tailscale，DERP 容器可以直接复用宿主机的 tailscaled：
+
+1) 在 `.env` 设置：
+```
+TAILSCALE_EMBEDDED_TAILSCALED=false
+```
+
+2) 在 docker-compose 挂载 tailscaled 套接字：
+```yaml
+services:
+  derp:
+    volumes:
+      - /var/run/tailscale/tailscaled.sock:/var/run/tailscale/tailscaled.sock:ro
+```
+
+3) 可移除以下内容：
+- `cap_add: [NET_ADMIN, NET_RAW]`
+- `devices: - /dev/net/tun:/dev/net/tun`
+- `/lib/modules` 挂载
+- `.env` 中的 `TAILSCALE_AUTH_KEY`
+
 ## 故障排除
 
 ### 证书文件权限问题
