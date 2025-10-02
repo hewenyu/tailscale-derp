@@ -9,9 +9,8 @@ RUN go build -o /derper ./cmd/derper
 
 FROM alpine:latest
 
-# Install tailscale
-RUN apk add --no-cache curl ca-certificates && \
-    curl -fsSL https://tailscale.com/install.sh | sh
+# Install tailscale directly via apk (avoid install.sh which expects openrc)
+RUN apk add --no-cache ca-certificates tailscale
 
 WORKDIR /app
 COPY --from=builder /derper /derper
@@ -19,8 +18,6 @@ COPY --from=builder /derper /derper
 COPY init.sh /init.sh
 
 RUN chmod +x /init.sh
-
-ENV TAILSCALE_AUTH_KEY="TTTT"
 ENV TAILSCALE_DERP_ADDR=":1443"
 ENV TAILSCALE_DERP_HOSTNAME="derp.example.com"
 ENV TAILSCALE_DERP_STUN_PORT="3478"

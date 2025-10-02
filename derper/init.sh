@@ -1,6 +1,9 @@
 #!/usr/bin/env sh
 set -e
 
+# Ensure state dir exists
+mkdir -p /var/lib/tailscale
+
 # Start tailscaled and connect to tailnet
 /usr/sbin/tailscaled --state=/var/lib/tailscale/tailscaled.state &> /var/lib/tailscale/tailscaled_initial.log &
 
