@@ -5,16 +5,27 @@ services:
     restart: always
     env_file:
       - .env
+    # 内置 tailscaled 模式需要以下能力和设备；如果改为复用宿主机 tailscaled，可移除
     cap_add:
       - NET_ADMIN
       - NET_RAW
     ports:
-      - "80:80"
-      - "443:1443"
+      # - "80:80"          # 如需 HTTP -> HTTPS 重定向
+      # - "443:1443"       # 若 derper 监听 1443, 暴露为 443
+      # - "443:443"        # 若 derper 监听 443, 直接暴露 443
       - "3478:3478/udp"
     volumes:
+      - /opt/1panel/www/sites/fox.yueban.fan/ssl:/certs:ro
       - /lib/modules:/lib/modules:ro
       - ./derp/config:/var/lib/tailscale
-      - ./certs:/certs:ro  # 1panel证书目录挂载
+      # 复用宿主机 tailscaled 时，请挂载 socket 并在 .env 里将 TAILSCALE_EMBEDDED_TAILSCALED=false
+      # - /var/run/tailscale/tailscaled.sock:/var/run/tailscale/tailscaled.sock:ro
     devices:
-      - /dev/net/tun:/dev/net/tun
+      - /dev/net/tun:/dev/net/tun   # 仅内置 tailscaled 模式需要
+    networks:
+      - 1panel_network
+
+
+networks:
+  1panel_network:
+    external: true
