@@ -50,19 +50,54 @@ else
   done
 fi
 
+# TLS mode control: auto|manual|none|letsencrypt (default: auto)
+TLS_MODE=${TAILSCALE_DERP_TLS_MODE:-auto}
+
 # Build derper command arguments
 # Use single-dash flags to match Go's flag parsing
 DERPER_ARGS="-hostname=$TAILSCALE_DERP_HOSTNAME -a=$TAILSCALE_DERP_ADDR -stun-port=$TAILSCALE_DERP_STUN_PORT -verify-clients=$TAILSCALE_DERP_VERIFY_CLIENTS -stun"
 
-# Add certificate configuration if files exist
-if [ -f "$TAILSCALE_DERP_CERT_FILE" ] && [ -f "$TAILSCALE_DERP_KEY_FILE" ]; then
-    echo "使用提供的证书文件: $TAILSCALE_DERP_CERT_FILE"
-    # Force manual cert mode when PEMs are provided
-    DERPER_ARGS="$DERPER_ARGS -certmode=manual -certfile=$TAILSCALE_DERP_CERT_FILE -keyfile=$TAILSCALE_DERP_KEY_FILE"
-else
-    echo "警告: 未找到证书文件，DERP服务器将运行在HTTP模式"
-    echo "请确保1panel已正确配置证书并挂载到 /certs 目录"
+# If verifying clients, ensure derper uses the correct tailscaled socket
+if [ "${TAILSCALE_DERP_VERIFY_CLIENTS}" = "true" ] || [ "${TAILSCALE_DERP_VERIFY_CLIENTS}" = "1" ]; then
+  DERPER_ARGS="$DERPER_ARGS -socket=$TS_SOCK"
 fi
+
+# TLS configuration
+case "$TLS_MODE" in
+  none)
+    echo "TLS_MODE=none，DERP 将以 HTTP 模式运行"
+    ;;
+  letsencrypt)
+    echo "TLS_MODE=letsencrypt，使用内置 ACME 自动签发"
+    DERPER_ARGS="$DERPER_ARGS -certmode=letsencrypt"
+    ;;
+  manual|auto)
+    # auto: if cert files exist, go manual; otherwise HTTP
+    if [ -f "$TAILSCALE_DERP_CERT_FILE" ] && [ -f "$TAILSCALE_DERP_KEY_FILE" ]; then
+      echo "使用提供的证书文件: $TAILSCALE_DERP_CERT_FILE"
+      DERPER_HELP=$(/derper -h 2>&1 || true)
+      if echo "$DERPER_HELP" | grep -q -- "-certfile"; then
+        DERPER_ARGS="$DERPER_ARGS -certmode=manual -certfile=$TAILSCALE_DERP_CERT_FILE -keyfile=$TAILSCALE_DERP_KEY_FILE"
+      else
+        CERT_WORKDIR="/app/certs-work"
+        mkdir -p "$CERT_WORKDIR"
+        ln -sf "$TAILSCALE_DERP_CERT_FILE" "$CERT_WORKDIR/fullchain.pem"
+        ln -sf "$TAILSCALE_DERP_KEY_FILE" "$CERT_WORKDIR/privkey.pem"
+        DERPER_ARGS="$DERPER_ARGS -certmode=manual -certdir=$CERT_WORKDIR"
+      fi
+    else
+      if [ "$TLS_MODE" = "manual" ]; then
+        echo "错误: TLS_MODE=manual，但未找到证书文件 ($TAILSCALE_DERP_CERT_FILE / $TAILSCALE_DERP_KEY_FILE)"
+        exit 1
+      fi
+      echo "未发现证书文件，DERP 将以 HTTP 模式运行"
+    fi
+    ;;
+  *)
+    echo "未知 TLS 模式: $TLS_MODE"
+    exit 1
+    ;;
+esac
 
 # Start Tailscale derp server
 exec /derper $DERPER_ARGS
