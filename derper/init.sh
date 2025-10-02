@@ -81,8 +81,9 @@ case "$TLS_MODE" in
       else
         CERT_WORKDIR="/app/certs-work"
         mkdir -p "$CERT_WORKDIR"
-        ln -sf "$TAILSCALE_DERP_CERT_FILE" "$CERT_WORKDIR/fullchain.pem"
-        ln -sf "$TAILSCALE_DERP_KEY_FILE" "$CERT_WORKDIR/privkey.pem"
+        # Newer derper expects hostname-specific filenames in certdir
+        ln -sf "$TAILSCALE_DERP_CERT_FILE" "$CERT_WORKDIR/${TAILSCALE_DERP_HOSTNAME}.crt"
+        ln -sf "$TAILSCALE_DERP_KEY_FILE" "$CERT_WORKDIR/${TAILSCALE_DERP_HOSTNAME}.key"
         DERPER_ARGS="$DERPER_ARGS -certmode=manual -certdir=$CERT_WORKDIR"
       fi
     else
