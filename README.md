@@ -85,6 +85,33 @@ services:
 - `/lib/modules` 挂载
 - `.env` 中的 `TAILSCALE_AUTH_KEY`
 
+## 反向代理与回源 SNI
+
+如果你使用 1Panel/OpenResty 或其他反向代理把公网 443 流量转发到 DERP，有两种常见方式：
+
+- TLS 直通（四层透传，推荐）：
+  - 使用 Nginx/OpenResty `stream` 转发 443 到容器内 `:1443`，开启 `ssl_preread` 以透传 SNI。
+  - 客户端的 SNI 必须是与你证书一致的域名，即 `.env` 中的 `TAILSCALE_DERP_HOSTNAME`。
+
+- TLS 终止 + 回源（七层反向代理）：
+  - 若后端 DERP 仍使用 HTTPS（默认自动/手动证书），必须在回源时携带 SNI；否则会出现证书/SNI 不匹配导致握手失败。
+  - Nginx 示例（HTTPS 回源）：
+    ```nginx
+    location / {
+      proxy_pass https://127.0.0.1:1443;
+      proxy_set_header Host derp.example.com;      # 与 TAILSCALE_DERP_HOSTNAME 一致
+      proxy_ssl_server_name on;                    # 开启回源 SNI
+      proxy_ssl_name derp.example.com;             # 设置回源 SNI 名称
+      # 可选：校验后端证书
+      # proxy_ssl_verify on;
+      # proxy_ssl_trusted_certificate /path/to/ca.pem;
+    }
+    ```
+
+  - 如果你希望由反向代理终止 TLS，后端仅走明文 HTTP，可将 DERP 置为 HTTP 模式：在 `.env` 设置 `TAILSCALE_DERP_TLS_MODE=none`，并把回源地址改为 `http://127.0.0.1:1443`。此时无需回源 SNI。
+
+提示：本镜像支持通过环境变量 `TAILSCALE_DERP_TLS_MODE` 控制 TLS 行为：`auto`（默认，检测证书自动启用）、`manual`（必须提供证书文件）、`letsencrypt`（内置 ACME）、`none`（纯 HTTP）。当选择 `auto/manual/letsencrypt` 时，使用反向代理回源 HTTPS 需正确设置回源 SNI（见上）。
+
 ## 与原版区别
 此版本移除了：
 - OpenResty反向代理配置
